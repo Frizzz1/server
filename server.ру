@@ -3,6 +3,18 @@ import os
 import websockets
 
 
+async def process_request(connection, request):
+    path = getattr(request, "path", "")
+    headers = getattr(request, "headers", {})
+    upgrade = headers.get("Upgrade", "")
+    conn_hdr = headers.get("Connection", "")
+    print(
+        f"[REQ] path={path!r} upgrade={upgrade!r} connection={conn_hdr!r}",
+        flush=True,
+    )
+    return None
+
+
 async def handler(websocket):
     remote = getattr(websocket, "remote_address", None)
     path_obj = getattr(websocket, "request", None)
@@ -23,7 +35,7 @@ async def main():
     port = int(os.environ.get("PORT", "10000"))
     print(f"[LISTEN] {host}:{port}", flush=True)
 
-    async with websockets.serve(handler, host, port):
+    async with websockets.serve(handler, host, port, process_request=process_request):
         await asyncio.Future()
 
 
