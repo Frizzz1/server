@@ -6,10 +6,9 @@ import websockets
 async def process_request(connection, request):
     path = getattr(request, "path", "")
     headers = getattr(request, "headers", {})
-    upgrade = headers.get("Upgrade", "")
-    conn_hdr = headers.get("Connection", "")
     print(
-        f"[REQ] path={path!r} upgrade={upgrade!r} connection={conn_hdr!r}",
+        f"[REQ] path={path!r} upgrade={headers.get('Upgrade', '')!r} "
+        f"conn={headers.get('Connection', '')!r} proto={headers.get('Sec-WebSocket-Protocol', '')!r}",
         flush=True,
     )
     return None
@@ -17,9 +16,8 @@ async def process_request(connection, request):
 
 async def handler(websocket):
     remote = getattr(websocket, "remote_address", None)
-    path_obj = getattr(websocket, "request", None)
-    req_path = getattr(path_obj, "path", getattr(websocket, "path", ""))
-    print(f"[CONNECTED] from={remote} path={req_path}", flush=True)
+    proto = getattr(websocket, "subprotocol", None)
+    print(f"[CONNECTED] from={remote} proto={proto!r}", flush=True)
 
     try:
         async for message in websocket:
@@ -35,7 +33,12 @@ async def main():
     port = int(os.environ.get("PORT", "10000"))
     print(f"[LISTEN] {host}:{port}", flush=True)
 
-    async with websockets.serve(handler, host, port, process_request=process_request):
+    async with websockets.serve(
+        handler,
+        host,
+        port,
+        process_request=process_request,
+    ):
         await asyncio.Future()
 
 
